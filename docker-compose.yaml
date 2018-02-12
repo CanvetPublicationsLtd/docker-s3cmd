@@ -1,0 +1,21 @@
+version: '3.4'
+secrets:
+  awsKey:
+    file: ./secrets/awsKey
+  awsSecret:
+    file: ./secrets/awsSecret
+services:
+  docker-s3cmd:
+    image: 'threevl/docker-s3cmd'
+    build:
+      context: '.'
+      dockerfile: 'Dockerfile'
+    command: ['cron', 'sync-local-to-s3']
+    secrets:
+      - awsKey
+      - awsSecret
+    volumes:
+      - ./samples:/opt/src
+    environment:
+      - "CRON_SCHEDULE=* * * * *"
+      - "S3_BUCKET_PATH=s3://canvet-backups/uploads-backup/"

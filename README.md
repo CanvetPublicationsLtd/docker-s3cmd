@@ -1,86 +1,55 @@
-docker-s3cmd
-============
-[![GitHub forks](https://img.shields.io/github/forks/sekka1/docker-s3cmd.svg)](https://github.com/sekka1/docker-s3cmd/network)
-[![GitHub stars](https://img.shields.io/github/stars/sekka1/docker-s3cmd.svg)](https://github.com/sekka1/docker-s3cmd/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/sekka1/docker-s3cmd.svg)](https://github.com/sekka1/docker-s3cmd/issues)
-[![Twitter](https://img.shields.io/twitter/url/https/github.com/sekka1/docker-s3cmd.svg?style=social)](https://twitter.com/intent/tweet?text=S3cmd%20in%20a%20%40Docker%20container:&url=https://github.com/sekka1/docker-s3cmd)
-[![Docker Pulls](https://img.shields.io/docker/pulls/garland/docker-s3cmd.svg)](https://hub.docker.com/r/garland/docker-s3cmd/)
-[![Docker Stars](https://img.shields.io/docker/stars/garland/docker-s3cmd.svg)](https://hub.docker.com/r/garland/docker-s3cmd/)
+# Docker S3 Command
 
+## Secrets
 
-# Supported tags and respective `Dockerfile` links
+To authorize the container with AWS, mount secrets with the names:
 
-- [`0.1` (*0.1/Dockerfile*)](https://github.com/sekka1/docker-s3cmd/blob/master/0.1/Dockerfile)
+- Use `awsKey` to mount your aws key
+- Use `awsSecret` to mount your aws secret
+- Use `awsSecurityToken` to mount your aws security token (optional)
 
+to the /run/secrets folder
 
-# Description
+## Environment Variables
 
-s3cmd in a Docker container.  This is useful if you are already using Docker.
-You can simply pull this container to that Docker server and move things between the local box and S3 by just running
-a container.
+Additional AWS parameters can be set using environment variables:
 
-Using [Alpine linux](https://hub.docker.com/_/alpine/).  This image is 31MB.
+- Use `S3_HOST_BASE` to specify the region of the bucket (optional)
+- Use `S3_BUCKET_PATH` to specify the path to the s3 bucket (e.g. s3://mybucket/folder/) (required)
+- Use `CRON_SCHEDULE` to specify the cron schedule when performing in cron mode. (e.g. 0 1 * * *)
 
-You can find an automated build of this container on the Docker Hub: https://hub.docker.com/r/garland/docker-s3cmd/
+## Commands
+The container can be setup to perform a one time sync from or to s3, or perform scheduled syncs to or from s3 using cron.
 
-# Usage Instruction
+- `sync-local-to-s3` Performs a one time sync to s3
+- `sync-s3-to-local` Performs a one time sync from s3
+- `cron sync-local-to-s3` Performs scheduled sync to as per the `CRON_SCHEDULE` environment variable.
+- `cron sync-s3-to-local` Performs scheduled sync from as per the `CRON_SCHEDULE` environment variable.
 
-## Optional inputs
-If access for your instance, task, etc. is configured through an IAM role you may omit the following inputs:
+## Example Compose File
 
-    AWS_KEY=<YOUR AWS KEY>
-    AWS_SECRET=<YOUR AWS SECRET>  
+The following example demonstrates how to perform a scheduled sync every minute.
 
-## Copy from local to S3:
-
-    AWS_KEY=<YOUR AWS KEY>
-    AWS_SECRET=<YOUR AWS SECRET>
-    BUCKET=s3://garland.public.bucket/database2/
-    LOCAL_FILE=/tmp/database
-
-    docker run \
-    --env aws_key=${AWS_KEY} \
-    --env aws_secret=${AWS_SECRET} \
-    --env cmd=sync-local-to-s3 \
-    --env DEST_S3=${BUCKET}  \
-    -v ${LOCAL_FILE}:/opt/src \
-    garland/docker-s3cmd
-
-* Change `LOCAL_FILE` to file/folder you want to upload to S3
-
-## Copy from S3 to local:
-
-    AWS_KEY=<YOUR AWS KEY>
-    AWS_SECRET=<YOUR AWS SECRET>
-    BUCKET=s3://garland.public.bucket/database
-    LOCAL_FILE=/tmp
-
-    docker run \
-    --env aws_key=${AWS_KEY} \
-    --env aws_secret=${AWS_SECRET} \
-    --env cmd=sync-s3-to-local \
-    --env SRC_S3=${BUCKET} \
-    -v ${LOCAL_FILE}:/opt/dest \
-    garland/docker-s3cmd
-
-* Change `LOCAL_FILE` to the file/folder where you want to download the files from S3 to the local computer
-
-## Run interactively with s3cmd
-
-    AWS_KEY=<YOUR AWS KEY>
-    AWS_SECRET=<YOUR AWS SECRET>
-
-    docker run -it \
-    --env aws_key=${AWS_KEY} \
-    --env aws_secret=${AWS_SECRET} \
-    --env cmd=interactive \
-    -v /:/opt/dest \
-    garland/docker-s3cmd /bin/sh
-
-Then execute the `main.sh` script to setup the s3cmd config file
-
-    /opt/main.sh
-
-Now you can run `s3cmd` commands
-
-    s3cmd ls /
+```
+version: '3.4'
+secrets:
+  awsKey:
+    file: ./secrets/awsKey
+  awsSecret:
+    file: ./secrets/awsSecret
+services:
+  docker-s3cmd:
+    image: 'threevl/docker-s3cmd'
+    build:
+      context: '.'
+      dockerfile: 'Dockerfile'
+    command: ['cron', 'sync-local-to-s3']
+    secrets:
+      - awsKey
+      - awsSecret
+    volumes:
+      - ./samples:/opt/src
+    environment:
+      - "CRON_SCHEDULE=* * * * *"
+      - "S3_BUCKET_PATH=s3://canvet-backups/uploads-backup/"
+```
