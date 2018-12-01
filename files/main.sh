@@ -108,7 +108,7 @@ elif [ "$1" = "sync-local-to-s3" ]; then
         SYNC_PATH=$3
     fi
 
-    echo "Sycing local path ${SYNC_PATH} to s3"
+    echo "Syncing local path ${SYNC_PATH} to s3"
     ${S3CMD_PATH} --config=/.s3cfg sync /opt/src/ $SYNC_PATH
 
 fi
