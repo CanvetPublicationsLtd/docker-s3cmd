@@ -6,7 +6,7 @@ secrets:
     file: ./secrets/awsSecret
 services:
   docker-s3cmd:
-    image: 'threevl/docker-s3cmd'
+    image: 'codevelopinteractive/docker-s3cmd'
     build:
       context: '.'
       dockerfile: 'Dockerfile'
@@ -18,4 +18,4 @@ services:
       - ./samples:/opt/src
     environment:
       - "CRON_SCHEDULE=* * * * *"
-      - "S3_BUCKET_PATH=s3://canvet-backups/uploads-backup/"
+      - "S3_BUCKET_PATH=s3://canvet-aws-backups/uploads-backup/"
